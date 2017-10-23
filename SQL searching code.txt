@@ -1,0 +1,83 @@
+-- creating tables of countries, cities, buildings
+
+CREATE TABLE Country(CountryID INTEGER, CountryName TEXT);
+INSERT INTO Country(CountryID, CountryName) values(1, 'Polska');
+INSERT INTO Country(CountryID, CountryName) values(2, 'Rosja');
+INSERT INTO Country(CountryID, CountryName) values(3, 'Ukraina');
+INSERT INTO Country(CountryID, CountryName) values(4, 'Bialorus');
+INSERT INTO Country(CountryID, CountryName) values(5, 'RPA');
+
+CREATE TABLE City(CityID INTEGER, CountryID INTEGER, CityName TEXT, Population INTEGER);
+INSERT INTO CITy(CityID, CountryID, CityName, Population) values(1,1, 'Krakow', 300);
+INSERT INTO CITy(CityID, CountryID, CityName, Population) values(2,1, 'Warszawa', 350);
+INSERT INTO CITy(CityID, CountryID, CityName, Population) values(3,2, 'Moskwa', 1300);
+INSERT INTO CITy(CityID, CountryID, CityName, Population) values(4,3, 'Lwiw', 300);
+INSERT INTO CITy(CityID, CountryID, CityName, Population) values(5,4, 'Czernobyl', 0);
+INSERT INTO CITy(CityID, CountryID, CityName, Population) values(6,5, 'Johannesburg', 200);
+INSERT INTO CITy(CityID, CountryID, CityName, Population) values(7,5, 'Johannesburg00', 0);
+
+
+CREATE TABLE Building(BuildingID INTEGER, CityID INTEGER, BuildingName TEXT, Floors INTEGER);
+INSERT INTO Building(BuildingID ,CityID, BuildingName, Floors) values(1,1, 'Pierwszy', 10);
+INSERT INTO Building(BuildingID ,CityID, BuildingName, Floors) values(2,1, 'Drugi', 100);
+INSERT INTO Building(BuildingID ,CityID, BuildingName, Floors) values(3,2, 'Trzeci', 150);
+INSERT INTO Building(BuildingID ,CityID, BuildingName, Floors) values(4,3, 'Czwarty', 20);
+INSERT INTO Building(BuildingID ,CityID, BuildingName, Floors) values(5,4, 'Piaty', 30);
+INSERT INTO Building(BuildingID ,CityID, BuildingName, Floors) values(6,4, 'Szosty', 50);
+INSERT INTO Building(BuildingID ,CityID, BuildingName, Floors) values(7,6, 'Siodmy', 1050);
+
+-- this code searches for countries with more than 400 inhabitants
+
+SELECT Country.CountryName AS Panstwo, SUM(Population) AS Mieszkancy FROM City 
+INNER JOIN Country ON City.CountryID = Country.CountryID
+GROUP BY Panstwo 
+HAVING Mieszkancy > 400
+;
+
+
+
+-- first make new table where are only names of countries that have at least one city without any building
+
+CREATE TABLE CountriesWithNull AS
+SELECT CountryName FROM City
+LEFT JOIN Building ON City.CityID=Building.CityID
+LEFT JOIN Country ON City.CountryID=Country.CountryID
+WHERE BuildingID IS NULL
+;
+
+
+
+-- then obtain all cities in found earlie countries that don't have buidlings
+
+CREATE TABLE CitiesWithNull AS
+SELECT count(Country.CountryName), * FROM City 
+LEFT JOIN Building ON City.CityID=Building.CityID
+LEFT JOIN Country ON City.CountryID=Country.CountryID
+INNER JOIN CountriesWithNull ON CountriesWithNull.CountryName=Country.CountryName
+WHERE BuildingID IS NULL
+GROUP BY Country.CountryName
+;
+
+
+-- then obtain all cities in found earlier countries that do have buildings
+
+CREATE TABLE CitiesWithoutNull AS
+SELECT count(Country.CountryName), * FROM City 
+LEFT JOIN Building ON City.CityID=Building.CityID
+LEFT JOIN Country ON City.CountryID=Country.CountryID
+INNER JOIN CountriesWithNull ON CountriesWithNull.CountryName=Country.CountryName
+WHERE BuildingID IS NOT NULL
+GROUP BY Country.CountryName
+;
+
+
+-- then substract = (all countries that have at least one city without building)-(all countries that have cities with buildings and without buildings)
+
+SELECT CitiesWithNull.CountryName FROM CitiesWithNull
+GROUP BY CitiesWithNull.CountryName
+EXCEPT
+SELECT CitiesWithoutNull.CountryName FROM CitiesWithoutNull
+GROUP BY CitiesWithoutNull.CountryName
+;
+
+-- the end
